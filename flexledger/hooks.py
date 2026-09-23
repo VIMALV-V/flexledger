@@ -5,6 +5,35 @@ app_description = "Member session credit and fitness studio ledger management"
 app_email = "vimal137msd@gmail.com"
 app_license = "mit"
 
+
+
+
+fixtures = [
+    {
+        "dt": "Role",
+        "filters": [
+            ["name", "in", [
+                "FIT Front Desk",
+                "FIT Trainer",
+                "FIT Studio Manager"
+            ]]
+        ]
+    }
+]
+
+permission_query_conditions = {
+    "Class Session": "flexledger.permissions.class_session_query"
+}
+
+after_install = "flexledger.install.after_install"
+
+doc_events = {
+    "*": {
+        "on_update": "flexledger.audit.log_change",
+        "on_submit": "flexledger.audit.log_change",
+        "on_cancel": "flexledger.audit.log_change",
+    }
+}
 # Apps
 # ------------------
 

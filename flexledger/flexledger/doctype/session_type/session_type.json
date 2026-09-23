@@ -45,7 +45,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-09-22 16:14:57.163336",
+ "modified": "2026-09-23 11:45:33.780732",
  "modified_by": "Administrator",
  "module": "FlexLedger",
  "name": "Session Type",
@@ -63,6 +63,21 @@
    "role": "System Manager",
    "share": 1,
    "write": 1
+  },
+  {
+   "read": 1,
+   "role": "FIT Front Desk"
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "read": 1,
+   "role": "FIT Studio Manager",
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "FIT Trainer"
   }
  ],
  "row_format": "Dynamic",
