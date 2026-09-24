@@ -10,7 +10,8 @@
   "member",
   "package_purchase",
   "credits_charged",
-  "attendance_status"
+  "attendance_status",
+  "remaining_credits"
  ],
  "fields": [
   {
@@ -41,13 +42,19 @@
    "fieldtype": "Select",
    "label": "Attendance Status",
    "options": "Booked\nAttended\nNo-Show\nCancelled"
+  },
+  {
+   "fieldname": "remaining_credits",
+   "fieldtype": "Int",
+   "label": "Remaining Credits",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-09-22 18:20:19.714980",
+ "modified": "2026-09-24 10:56:35.528004",
  "modified_by": "Administrator",
  "module": "FlexLedger",
  "name": "Attendee Entry",

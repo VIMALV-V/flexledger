@@ -85,17 +85,63 @@ frappe.get_all(
 
 Frappe calls `on_update()` as part of the document save lifecycle.
 
-If `self.save()` is called from inside `on_update()`,  `self.save()` is executed,Frappe triggers `on_update()`,`on_update()` calls `self.save()` again , then second `save()` triggers `on_update()` again. This continues recursively.
-
+Do not call self.save() on on_update.
+save() triggers on_update(), so calling self.save()
+inside on_update() causes recursive execution.
 This can result in recursive execution and a recursion error.
 
 ### Incorrect pattern
 
-```python
 def on_update(self):
     self.save()
+
+### Correct patter
+
+def on_update(self):
+    pass
+Calculations should be performed in validate() not in on_update.
+
+
 
 
 ## E3 — One Performance Judgment Call
 
 frappe.db.get_value() is enough because there is only one field requirement from studio settings.It avoids loading the complete document unlike frappe.db.get_doc(). Since this is used in a loop, the value is retrieved once before entering the loop rather than querying it repeatedly.
+
+
+## H1 — Asynchronous `frappe.call()` Pitfall
+
+`frappe.call()` is asynchronous. If it is called inside the client-side `validate` event without `await`, the form may save before the server returns the result. This can allow validation to finish before the package balance is checked.
+In FlexLedger, we fetch the member's active package balance when a member is selected in the Attendee Entry child table. The remaining credits are displayed immediately, and a warning appears if the balance is insufficient.
+Asynchronous data can also be fetched during `onload` or `refresh` so it is available before the user saves the form.
+The Python `validate()` method independently checks package ownership, status, expiry date and available credits. This ensures that invalid bookings are rejected even if client-side JavaScript is bypassed.
+
+
+
+## I1 — SQL Parameterization
+
+The Members Running Low Query Report uses a parameterized SQL query.
+
+#f-string interpolation:
+
+"""
+query = f"""
+SELECT name, member, credits_remaining, expiry_date, status
+FROM `tabPackage Purchase`
+WHERE status = 'Active'
+AND credits_remaining <= {threshold}
+"""
+
+ # Parameterized query:
+
+query = """
+SELECT name, member, credits_remaining, expiry_date, status
+FROM `tabPackage Purchase`
+WHERE status = 'Active'
+AND credits_remaining <= %(threshold)s
+"""
+
+frappe.db.sql(query, {"threshold": threshold}, as_dict=True)
+
+
+The f-string inserts user input directly into SQL, creating an SQL injection risk. Parameterization passes the value separately which is safe.

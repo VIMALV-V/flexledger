@@ -5,9 +5,6 @@ app_description = "Member session credit and fitness studio ledger management"
 app_email = "vimal137msd@gmail.com"
 app_license = "mit"
 
-
-
-
 fixtures = [
     {
         "dt": "Role",
@@ -34,6 +31,9 @@ doc_events = {
         "on_cancel": "flexledger.audit.log_change",
     }
 }
+
+
+
 # Apps
 # ------------------
 
