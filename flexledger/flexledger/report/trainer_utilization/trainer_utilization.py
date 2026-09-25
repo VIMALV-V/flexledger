@@ -1,64 +1,103 @@
-# Copyright (c) 2026, Vimal and contributors
-# For license information, please see license.txt
 
-# import frappe
-from frappe import _
+import frappe
 
 
-def execute(filters: dict | None = None):
-	"""Return columns and data for the report.
+def execute(filters=None):
+    filters = frappe._dict(filters or {})
 
-	This is the main entry point for the report. It accepts the filters as a
-	dictionary and should return columns and data. It is called by the framework
-	every time the report is refreshed or a filter is updated.
-	"""
-	columns = get_columns()
-	data = get_data()
+    columns = [
+        {
+            "label": "Trainer",
+            "fieldname": "trainer",
+            "fieldtype": "Link",
+            "options": "Trainer",
+        },
+        {
+            "label": "Sessions Run",
+            "fieldname": "sessions_run",
+            "fieldtype": "Int"
+        },
+        {
+            "label": "Total Attendees",
+            "fieldname": "total_attendees",
+            "fieldtype": "Int"
+        },
+        {
+            "label": "No-Show Rate %",
+            "fieldname": "no_show_rate",
+            "fieldtype": "Percent"
+        },
+        {
+            "label": "Credits Processed",
+            "fieldname": "credits_processed",
+            "fieldtype": "Int"
+        }
+    ]
+    conditions = {"docstatus": 1}
 
-	return columns, data
+    if filters.get("from_date"):
+        conditions["session_date"] = [">=", filters.from_date]
 
-def execute_snapshot_report(filters: dict | None = None):
-	"""Return columns and data for the report.
+    if filters.get("to_date"):
+        if filters.get("from_date"):
+            conditions["session_date"] = [
+                "between",
+                [filters.from_date, filters.to_date]
+            ]
+        else:
+            conditions["session_date"] = ["<=", filters.to_date]
 
-	This is the main entry point for snapshot report. When 'Synced
-	Report' is enabled in report, framework will call this method
-	every time the report is refreshed or a filter is updated. It
-	accepts the same filters as normal execute. But a utility method -
-	get_latest_sync, is also imported.
+    if filters.get("trainer"):
+        conditions["trainer"] = filters.trainer
 
-	"""
-	from frappe.database.duckdb.database import get_latest_sync
+    sessions = frappe.get_list(
+        "Class Session",
+        filters=conditions,
+        fields=["name", "trainer"],
+        page_length=0
+    )
+    data = []
 
-	columns = get_columns()
-	data = get_data()
+    for session in sessions:
+        if not session.trainer:
+            continue
+        attendees = frappe.get_all(
+            "Attendee Entry",
+            filters={"parent": session.name},
+            fields=["attendance_status", "credits_charged"]
+        )
+        row = next(
+            (r for r in data if r["trainer"] == session.trainer),
+            None
+        )
 
-	return columns, data
+        if not row:
+            row = {
+                "trainer": session.trainer,
+                "sessions_run": 0,
+                "total_attendees": 0,
+                "no_shows": 0,
+                "credits_processed": 0
+            }
+            data.append(row)
+        row["sessions_run"] += 1
 
-def get_columns() -> list[dict]:
-	"""Return columns for the report.
+        for attendee in attendees:
+            if attendee.attendance_status == "Cancelled":
+                continue
+            row["total_attendees"] += 1
 
-	One field definition per column, just like a DocType field definition.
-	"""
-	return [
-		{
-			"label": _("Column 1"),
-			"fieldname": "column_1",
-			"fieldtype": "Data",
-		},
-		{
-			"label": _("Column 2"),
-			"fieldname": "column_2",
-			"fieldtype": "Int",
-		},
-	]
+            if attendee.attendance_status == "No-Show":
+                row["no_shows"] += 1
 
+            row["credits_processed"] += attendee.credits_charged or 0
 
-def get_data() -> list[list]:
-	"""Return data for the report.
-
-	The report data is a list of rows, with each row being a list of cell values.
-	"""
-	return [
-		["Row 1", 1],
-		["Row 2", 2],
-	]
+    for row in data:
+        if row["total_attendees"]:
+            row["no_show_rate"] = round(
+                row["no_shows"] / row["total_attendees"] * 100,
+                2
+            )
+        else:
+            row["no_show_rate"] = 0
+    return columns, data

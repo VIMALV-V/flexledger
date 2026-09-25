@@ -33,7 +33,17 @@ doc_events = {
 }
 
 
+jinja = {
+    "methods": [
+        "flexledger.jinja_methods.get_studio_name"
+    ]
+}
 
+scheduler_events = {
+    "daily": [
+        "flexledger.jobs.check_expiring_packages"
+    ]
+}
 # Apps
 # ------------------
 

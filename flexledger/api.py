@@ -190,3 +190,36 @@ def swap_class_trainer(session_name, trainer):
     session.save()
 
     return {"message": "Trainer changed successfully"}
+
+    
+@frappe.whitelist()
+def get_member_balance():
+    member_id = frappe.form_dict.get("member_id")
+    if not member_id or not frappe.db.exists("Member", member_id):
+        frappe.local.response["http_status_code"] = 404
+        return {"error": "Not found"}
+
+    if not frappe.has_permission("Member", "read", member_id):
+        frappe.throw("Not permitted", frappe.PermissionError)
+    packages = frappe.get_list(
+        "Package Purchase",
+        filters={
+            "member": member_id,
+            "status": "Active"
+        },
+        fields=["credits_remaining", "expiry_date"],
+        order_by="expiry_date asc"
+    )
+    if packages:
+        package = packages[0]
+
+        return {
+            "member": member_id,
+            "credits_remaining": package.credits_remaining,
+            "expiry_date": str(package.expiry_date)
+        }
+    return {
+        "member": member_id,
+        "credits_remaining": 0,
+        "expiry_date": None
+    }

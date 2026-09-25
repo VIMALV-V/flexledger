@@ -117,6 +117,7 @@ class ClassSession(Document):
                     package_purchase=row.package_purchase,
                     member=row.member
                 )
+    
 
     def on_cancel(self):
         for row in self.attendees:
